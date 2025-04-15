@@ -57,7 +57,7 @@ static Clr *scheme[SchemeLast];
 #include "config.h"
 
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
-static char *(*fstrstr)(const char *, const char *) = strstr;
+static const char *(*fstrstr)(const char *, const char *) = strstr;
 
 static unsigned int
 textw_clamp(const char *str, unsigned int n)
@@ -119,7 +119,7 @@ cleanup(void)
 	XCloseDisplay(dpy);
 }
 
-static char *
+static const char *
 cistrstr(const char *h, const char *n)
 {
 	size_t i;
@@ -299,7 +299,7 @@ match(void)
 	strcpy(buf, text);
 	/* separate input text into tokens to be matched individually */
 	for (s = strtok(buf, " "); s; tokv[tokc - 1] = s, s = strtok(NULL, " "))
-		if (++tokc > tokn && !(tokv = realloc(tokv, ++tokn * sizeof *tokv)))
+		if (++tokc > tokn && !(tokv = (char**)realloc(tokv, ++tokn * sizeof *tokv)))
 			die("cannot realloc %zu bytes:", tokn * sizeof *tokv);
 
 	matches = others = matchend = othersend = NULL;
@@ -606,7 +606,7 @@ readstdin(void)
 	for (i = 0; (len = getline(&line, &linesiz, stdin)) != -1; i++) {
 		if (i + 1 >= itemsiz) {
 			itemsiz += 256;
-			if (!(items = realloc(items, itemsiz * sizeof(*items))))
+			if (!(items = (item*)realloc(items, itemsiz * sizeof(*items))))
 				die("cannot realloc %zu bytes:", itemsiz * sizeof(*items));
 		}
 		if (line[len - 1] == '\n')
@@ -669,7 +669,9 @@ setup(void)
 	XIM xim;
 	Window w, dw, *dws;
 	XWindowAttributes wa;
-	XClassHint ch = {"dmenu", "dmenu"};
+	// TODO: Clean this
+	char dmenu[] = "dmenu";
+	XClassHint ch = {dmenu, dmenu};
 #ifdef XINERAMA
 	XineramaScreenInfo *info;
 	Window pw;
@@ -839,7 +841,7 @@ loadpopitems(void)
 	for (i = 0; (len = getline(&line, &linesiz, fp)) != -1; i++) {
 		if (i + 1 >= itemsiz) {
 			itemsiz += 256;
-			if (!(popitems = realloc(popitems, itemsiz * sizeof(*popitems))))
+			if (!(popitems = (struct item*)realloc(popitems, itemsiz * sizeof(*popitems))))
 				die("cannot realloc %zu bytes:", itemsiz * sizeof(*popitems));
 		}
 		itemize((struct item*)&popitems[i], line, len);
@@ -869,7 +871,8 @@ main(int argc, char *argv[])
 	for (i = 1; i < argc; i++)
 		/* these options take no arguments */
 		if (!strcmp(argv[i], "-v")) {      /* prints version information */
-			puts("dmenu-"VERSION);
+			puts("dmenu-");
+			puts(VERSION);
 			exit(0);
 		} else if (!strcmp(argv[i], "-b")) /* appears at the bottom of the screen */
 			topbar = 0;

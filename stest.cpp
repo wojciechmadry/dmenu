@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <sys/stat.h>
+#include <bits/struct_stat.h>
 
 #include <dirent.h>
 #include <limits.h>
@@ -18,7 +19,8 @@ static void usage(void);
 
 static int match = 0;
 static int flag[26];
-static struct stat old, new;
+// TODO: Better naming
+static struct stat old, news;
 
 static void
 test(const char *path, const char *name)
@@ -33,7 +35,7 @@ test(const char *path, const char *name)
 	&& (!FLAG('f') || S_ISREG(st.st_mode))                        /* regular file      */
 	&& (!FLAG('g') || st.st_mode & S_ISGID)                       /* set-group-id flag */
 	&& (!FLAG('h') || (!lstat(path, &ln) && S_ISLNK(ln.st_mode))) /* symbolic link     */
-	&& (!FLAG('n') || st.st_mtime > new.st_mtime)                 /* newer than file   */
+	&& (!FLAG('n') || st.st_mtime > news.st_mtime)                 /* newer than file   */
 	&& (!FLAG('o') || st.st_mtime < old.st_mtime)                 /* older than file   */
 	&& (!FLAG('p') || S_ISFIFO(st.st_mode))                       /* named pipe        */
 	&& (!FLAG('r') || access(path, R_OK) == 0)                    /* readable          */
@@ -70,7 +72,7 @@ main(int argc, char *argv[])
 	case 'n': /* newer than file */
 	case 'o': /* older than file */
 		file = EARGF(usage());
-		if (!(FLAG(ARGC()) = !stat(file, (ARGC() == 'n' ? &new : &old))))
+		if (!(FLAG(ARGC()) = !stat(file, (ARGC() == 'n' ? &news : &old))))
 			perror(file);
 		break;
 	default:
