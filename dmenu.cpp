@@ -11,9 +11,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
-#ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
-#endif
 #include <X11/Xft/Xft.h>
 
 #include "drw.h"
@@ -672,11 +670,9 @@ setup(void)
 	// TODO: Clean this
 	char dmenu[] = "dmenu";
 	XClassHint ch = {dmenu, dmenu};
-#ifdef XINERAMA
 	XineramaScreenInfo *info;
 	Window pw;
 	int a, di, n, area = 0;
-#endif
 	/* init appearance */
 	for (j = 0; j < SchemeLast; j++)
 		scheme[j] = drw_scm_create(drw, colors[j], 2);
@@ -688,7 +684,6 @@ setup(void)
 	bh = drw->fonts->h + 2;
 	lines = MAX(lines, 0);
 	mh = (lines + 1) * bh;
-#ifdef XINERAMA
 	i = 0;
 	if (parentwin == root && (info = XineramaQueryScreens(dpy, &n))) {
 		XGetInputFocus(dpy, &w, &di);
@@ -719,7 +714,6 @@ setup(void)
 		mw = info[i].width;
 		XFree(info);
 	} else
-#endif
 	{
 		if (!XGetWindowAttributes(dpy, parentwin, &wa))
 			die("could not get embedding window attributes: 0x%lx",
@@ -920,11 +914,6 @@ main(int argc, char *argv[])
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
-
-#ifdef __OpenBSD__
-	if (pledge("stdio rpath", NULL) == -1)
-		die("pledge");
-#endif
 
 	if (fast && !isatty(0)) {
 		grabkeyboard();
