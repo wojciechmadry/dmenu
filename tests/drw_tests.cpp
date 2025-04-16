@@ -160,4 +160,11 @@ TEST_F(DrwTest, drw_setscheme) {
 	EXPECT_EQ(drw.scheme, &scm);
 }
 
+TEST_F(DrwTest, drw_map) {
+	EXPECT_CALL(xlib, XCopyArea()).Times(testing::Exactly(1));
+	EXPECT_CALL(xlib, XSync()).Times(testing::Exactly(1));
+	drw_map(nullptr, win, 0, 0, 0, 0);
+	drw_map(&drw, win, 0, 0, 0, 0);
+}
+
 }  // namespace

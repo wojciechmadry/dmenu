@@ -34,6 +34,8 @@ class XlibResults_ {
     virtual bool XftColorAllocName() = 0;
     virtual Cursor XCreateFontCursor() = 0;
     virtual int XFreeCursor() = 0;
+    virtual int XCopyArea() = 0;
+    virtual int XSync() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -49,6 +51,8 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(bool, XftColorAllocName, (), (override));
     MOCK_METHOD(Cursor, XCreateFontCursor, (), (override));
     MOCK_METHOD(int, XFreeCursor, (), (override));
+    MOCK_METHOD(int, XCopyArea, (), (override));
+    MOCK_METHOD(int, XSync, (), (override));
 };
 }
 
@@ -120,7 +124,7 @@ inline int XCopyArea(
     int			/* dest_x */,
     int			/* dest_y */
 ) {
-  return 0;
+  return getXlibMockResults().XCopyArea();
 }
 
 inline int XFreeGC(
@@ -140,7 +144,7 @@ inline int XFreePixmap(
 inline int XSync(
     Display*		/* display */,
     bool		/* discard */
-) {return 0;}
+) {return getXlibMockResults().XSync();}
 
 inline int XFreeCursor(
     Display*		/* display */,
