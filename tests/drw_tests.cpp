@@ -14,6 +14,7 @@ class DrwTest : public testing::Test {
 		dpy.screens = new Screen[1];
 		dpy.screens[0] = Screen{};
 		drw.dpy = &dpy;
+		drw.scheme = &scheme;
   }
 
   void TearDown() override {
@@ -30,6 +31,7 @@ class DrwTest : public testing::Test {
 	Drw drw{};
 	Display dpy{};
 	Window win{};
+	Clr scheme{};
 	impl::XlibMockResults_& xlib;
 };
 
@@ -165,6 +167,15 @@ TEST_F(DrwTest, drw_map) {
 	EXPECT_CALL(xlib, XSync()).Times(testing::Exactly(1));
 	drw_map(nullptr, win, 0, 0, 0, 0);
 	drw_map(&drw, win, 0, 0, 0, 0);
+}
+
+TEST_F(DrwTest, drw_rect) {
+	EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(2));
+	EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(1));
+	EXPECT_CALL(xlib, XDrawRectangle()).Times(testing::Exactly(1));
+	drw_rect(nullptr, 0, 0, 0, 0, 0, 0);
+	drw_rect(&drw, 0, 0, 0, 0, 0, 0);
+	drw_rect(&drw, 0, 0, 0, 0, 1, 0);
 }
 
 }  // namespace

@@ -36,6 +36,9 @@ class XlibResults_ {
     virtual int XFreeCursor() = 0;
     virtual int XCopyArea() = 0;
     virtual int XSync() = 0;
+    virtual int XSetForeground() = 0;
+    virtual int XFillRectangle() = 0;
+    virtual int XDrawRectangle() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -53,6 +56,9 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(int, XFreeCursor, (), (override));
     MOCK_METHOD(int, XCopyArea, (), (override));
     MOCK_METHOD(int, XSync, (), (override));
+    MOCK_METHOD(int, XSetForeground, (), (override));
+    MOCK_METHOD(int, XFillRectangle, (), (override));
+    MOCK_METHOD(int, XDrawRectangle, (), (override));
 };
 }
 
@@ -85,7 +91,7 @@ inline int XSetForeground(
     GC			/* gc */,
     unsigned long	/* foreground */
 ) {
-  return 0;
+  return getXlibMockResults().XSetForeground();
 }
 
 inline int XFillRectangle(
@@ -97,7 +103,7 @@ inline int XFillRectangle(
     unsigned int	/* width */,
     unsigned int	/* height */
 ){
-  return 0;
+  return getXlibMockResults().XFillRectangle();
 }
 
 inline int XDrawRectangle(
@@ -109,7 +115,7 @@ inline int XDrawRectangle(
     unsigned int	/* width */,
     unsigned int	/* height */
 ) {
-  return 0;
+  return getXlibMockResults().XDrawRectangle();
 }
 
 inline int XCopyArea(
