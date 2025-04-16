@@ -137,4 +137,14 @@ TEST_F(DrwTest, drw_scm_create) {
 	free(clr);
 }
 
+TEST_F(DrwTest, drw_cur) {
+	int shape = 1;
+	EXPECT_EQ(drw_cur_create(nullptr, shape), nullptr);
+	EXPECT_CALL(xlib, XCreateFontCursor()).Times(testing::Exactly(1)).WillRepeatedly(testing::Return(Cursor{true}));
+	auto cur = drw_cur_create(&drw, shape);
+	EXPECT_TRUE(cur->cursor.set);
+	EXPECT_NE(cur, nullptr);
+	EXPECT_CALL(xlib, XFreeCursor()).Times(testing::Exactly(1));
+	drw_cur_free(&drw, cur);
+}
 }  // namespace

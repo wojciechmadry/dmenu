@@ -32,6 +32,8 @@ class XlibResults_ {
     virtual FcPattern* FcNameParse() = 0;
     virtual void XftTextExtentsUtf8() = 0;
     virtual bool XftColorAllocName() = 0;
+    virtual Cursor XCreateFontCursor() = 0;
+    virtual int XFreeCursor() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -45,6 +47,8 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(FcPattern*, FcNameParse, (), (override));
     MOCK_METHOD(void, XftTextExtentsUtf8, (), (override));
     MOCK_METHOD(bool, XftColorAllocName, (), (override));
+    MOCK_METHOD(Cursor, XCreateFontCursor, (), (override));
+    MOCK_METHOD(int, XFreeCursor, (), (override));
 };
 }
 
@@ -141,12 +145,12 @@ inline int XSync(
 inline int XFreeCursor(
     Display*		/* display */,
     Cursor		/* cursor */
-) {return 0;}
+) {return getXlibMockResults().XFreeCursor();}
 
 inline Cursor XCreateFontCursor(
     Display*		/* display */,
     unsigned int	/* shape */
-) {return {};}
+) {return getXlibMockResults().XCreateFontCursor();}
 
 inline Pixmap XCreatePixmap(
     Display*		/* display */,
