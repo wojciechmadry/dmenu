@@ -20,12 +20,14 @@ class XlibResults_ {
     virtual int XCreatePixmap() = 0;
     virtual GC XCreateGC() = 0;
     virtual int XSetLineAttributes() = 0;
+    virtual int XFreePixmap() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(int, XCreatePixmap, (), (override));
     MOCK_METHOD(GC, XCreateGC, (), (override));
     MOCK_METHOD(int, XSetLineAttributes, (), (override));
+    MOCK_METHOD(int, XFreePixmap, (), (override));
 };
 }
 
@@ -106,7 +108,7 @@ inline int XFreePixmap(
     Display*		/* display */,
     Pixmap		/* pixmap */
 ) {
-  return 0;
+  return getXlibMockResults().XFreePixmap();
 }
 
 inline int XSync(
