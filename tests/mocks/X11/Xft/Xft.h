@@ -16,7 +16,11 @@ XftTextExtentsUtf8 (Display	    *dpy,
 		    XGlyphInfo	    *extents){}
 
 inline void
-XftFontClose (Display *dpy, XftFont *pub) {}
+XftFontClose (Display *dpy, XftFont *pub) {
+  if(pub){
+    free(pub);
+  }
+}
 
 inline XftDraw *
 XftDrawCreate (Display   *dpy,

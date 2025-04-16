@@ -16,7 +16,11 @@ class FcConfig{
 };
 
 inline void
-FcPatternDestroy (FcPattern *p){}
+FcPatternDestroy (FcPattern *p){
+  if(p) {
+    free(p);
+  }
+}
 
 inline FcPattern *
 FcPatternDuplicate (const FcPattern *p) {return nullptr;}

@@ -60,4 +60,25 @@ TEST_F(DrwTest, drw_resize) {
 	EXPECT_EQ(drw.w, 6);
 	EXPECT_EQ(drw.h, 7);
 }
+
+TEST_F(DrwTest, drw_free) {
+	Drw* drw_ptr = (Drw*)malloc(sizeof(Drw));
+	*drw_ptr = Drw{};
+
+	auto f1 = (Fnt*)malloc(sizeof(Fnt));
+	auto f2 = (Fnt*)malloc(sizeof(Fnt));
+	auto f3 = (Fnt*)malloc(sizeof(Fnt));
+	*f1 = Fnt{};
+	*f2 = Fnt{};
+	*f3 = Fnt{};
+	f1->next = f2;
+	f2->next = f3;
+	f2->pattern = (FcPattern*) malloc(sizeof(FcPattern) * 1);
+	f2->xfont = (XftFont*) malloc(sizeof(XftFont) * 1);
+	drw_ptr->fonts = f1;
+	EXPECT_CALL(xlib, XFreePixmap()).Times(testing::Exactly(1));
+	EXPECT_CALL(xlib, XFreeGC()).Times(testing::Exactly(1));
+	drw_free(drw_ptr);
+}
+
 }  // namespace
