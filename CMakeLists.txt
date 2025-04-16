@@ -5,6 +5,8 @@ set(STEST stest)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(X11 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Fontconfig REQUIRED)

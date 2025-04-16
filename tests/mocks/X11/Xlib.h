@@ -1,6 +1,7 @@
 #ifndef MOCK_XLIB_HPP_
 #define MOCK_XLIB_HPP_
 
+#include <gmock/gmock.h>
 #include "all_mock_class.hpp"
 #include "X.h"
 #include <cstdint>
@@ -12,6 +13,23 @@ typedef std::uint64_t Pixmap;
 #define DefaultVisual(dpy, scr) (ScreenOfDisplay(dpy,scr)->root_visual)
 #define DefaultColormap(dpy, scr)(ScreenOfDisplay(dpy,scr)->cmap)
 #define DefaultDepth(dpy, scr) 	(ScreenOfDisplay(dpy,scr)->root_depth)
+
+namespace impl{
+class XlibResults_ {
+    public:
+    virtual int XCreatePixmap() = 0;
+    virtual GC XCreateGC() = 0;
+    virtual int XSetLineAttributes() = 0;
+};
+
+struct XlibMockResults_ : public XlibResults_ {
+    MOCK_METHOD(int, XCreatePixmap, (), (override));
+    MOCK_METHOD(GC, XCreateGC, (), (override));
+    MOCK_METHOD(int, XSetLineAttributes, (), (override));
+};
+}
+
+impl::XlibMockResults_& getXlibMockResults();
 
 typedef struct _XGlyphInfo {
     /** Glyph width. */
@@ -112,7 +130,9 @@ inline Pixmap XCreatePixmap(
     unsigned int	/* width */,
     unsigned int	/* height */,
     unsigned int	/* depth */
-) {return 0;}
+) {
+    return getXlibMockResults().XCreatePixmap();
+}
 
 
 struct XGCValues{};
@@ -122,7 +142,7 @@ inline GC XCreateGC(
     Drawable		/* d */,
     unsigned long	/* valuemask */,
     XGCValues*		/* values */
-) {return {};}
+) {return getXlibMockResults().XCreateGC();}
 
 inline int XSetLineAttributes(
     Display*		/* display */,
@@ -131,6 +151,6 @@ inline int XSetLineAttributes(
     int			/* line_style */,
     int			/* cap_style */,
     int			/* join_style */
-) {return 0;}
+) {return getXlibMockResults().XSetLineAttributes();}
 
 #endif
