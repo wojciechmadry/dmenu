@@ -147,4 +147,17 @@ TEST_F(DrwTest, drw_cur) {
 	EXPECT_CALL(xlib, XFreeCursor()).Times(testing::Exactly(1));
 	drw_cur_free(&drw, cur);
 }
+
+TEST_F(DrwTest, drw_setfontset) {
+	Fnt fnt{};
+	drw_setfontset(&drw, &fnt);
+	EXPECT_EQ(drw.fonts, &fnt);
+}
+
+TEST_F(DrwTest, drw_setscheme) {
+	Clr scm{};
+	drw_setscheme(&drw, &scm);
+	EXPECT_EQ(drw.scheme, &scm);
+}
+
 }  // namespace
