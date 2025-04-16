@@ -7,6 +7,11 @@
 #include <cstdint>
 
 typedef std::uint64_t Pixmap;
+
+typedef std::int8_t	    XftChar8;
+typedef std::uint64_t    XftResult;
+typedef XftResult     FcResult;
+
 #define False 0
 
 #define ScreenOfDisplay(dpy, scr)(&dpy->screens[scr])
@@ -22,6 +27,9 @@ class XlibResults_ {
     virtual int XSetLineAttributes() = 0;
     virtual int XFreePixmap() = 0;
     virtual int XFreeGC() = 0;
+    virtual XftFont* XftFontOpenPattern() = 0;
+    virtual XftFont* XftFontOpenName() = 0;
+    virtual FcPattern* FcNameParse() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -30,6 +38,9 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(int, XSetLineAttributes, (), (override));
     MOCK_METHOD(int, XFreePixmap, (), (override));
     MOCK_METHOD(int, XFreeGC, (), (override));
+    MOCK_METHOD(XftFont*, XftFontOpenPattern, (), (override));
+    MOCK_METHOD(XftFont*, XftFontOpenName, (), (override));
+    MOCK_METHOD(FcPattern*, FcNameParse, (), (override));
 };
 }
 
@@ -51,6 +62,11 @@ typedef struct _XGlyphInfo {
     /** Vertical margin to the next Glyph. */
     short yOff;
 } XGlyphInfo;
+
+inline XftFont *
+XftFontOpenPattern (Display *dpy, FcPattern *pattern) {
+  return getXlibMockResults().XftFontOpenPattern();
+}
 
 inline int XSetForeground(
     Display*		/* display */,
@@ -156,5 +172,74 @@ inline int XSetLineAttributes(
     int			/* cap_style */,
     int			/* join_style */
 ) {return getXlibMockResults().XSetLineAttributes();}
+
+#include <cstdint>
+
+inline void
+XftTextExtentsUtf8 (Display	    *dpy,
+		    XftFont	    *pub,
+		    const FcChar8 *string,
+		    int		    len,
+		    XGlyphInfo	    *extents){}
+
+inline void
+XftFontClose (Display *dpy, XftFont *pub) {
+  if(pub){
+    free(pub);
+  }
+}
+
+inline XftDraw *
+XftDrawCreate (Display   *dpy,
+	       Drawable  drawable,
+	       Visual    *visual,
+	       Colormap  colormap) {
+  return nullptr;
+}
+
+inline bool
+XftCharExists (Display	    *dpy,
+	       XftFont	    *pub,
+	       FcChar32    ucs4) {
+  return true;
+}
+
+inline bool
+XftColorAllocName (Display  *dpy,
+		   const Visual   *visual,
+		   Colormap cmap,
+		   const char	    *name,
+		   XftColor *result) {
+  return true;
+}
+
+inline void
+XftDrawDestroy (XftDraw	*draw) {}
+
+inline void
+XftDrawStringUtf8 (XftDraw	    *draw,
+		   const XftColor *color,
+		   XftFont	    *pub,
+		   int		    x,
+		   int		    y,
+		   const FcChar8  *string,
+		   int		    len) {}
+
+inline XftFont *
+XftFontOpenName (Display *dpy, int screen, const char *name) {
+  return getXlibMockResults().XftFontOpenName();
+}
+
+inline FcPattern *
+FcNameParse (const FcChar8 *name) {
+  return getXlibMockResults().FcNameParse();
+}
+
+inline FcPattern *
+XftFontMatch (Display		*dpy,
+	      int		screen,
+	      const FcPattern *pattern,
+	      FcResult		*result) {return nullptr;}
+
 
 #endif

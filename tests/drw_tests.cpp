@@ -20,6 +20,13 @@ class DrwTest : public testing::Test {
 		delete [] dpy.screens;
   }
 
+	template<typename T>
+	T* create(const size_t elems = 1U) {
+		T* res = (T*)malloc(sizeof(T) * elems);
+		*res = T{};
+		return res;
+	}
+
 	Drw drw{};
 	Display dpy{};
 	Window win{};
@@ -62,23 +69,41 @@ TEST_F(DrwTest, drw_resize) {
 }
 
 TEST_F(DrwTest, drw_free) {
-	Drw* drw_ptr = (Drw*)malloc(sizeof(Drw));
-	*drw_ptr = Drw{};
+	Drw* drw_ptr = create<Drw>();
 
-	auto f1 = (Fnt*)malloc(sizeof(Fnt));
-	auto f2 = (Fnt*)malloc(sizeof(Fnt));
-	auto f3 = (Fnt*)malloc(sizeof(Fnt));
-	*f1 = Fnt{};
-	*f2 = Fnt{};
-	*f3 = Fnt{};
+	auto f1 = create<Fnt>();
+	auto f2 = create<Fnt>();
+	auto f3 = create<Fnt>();
 	f1->next = f2;
 	f2->next = f3;
-	f2->pattern = (FcPattern*) malloc(sizeof(FcPattern) * 1);
-	f2->xfont = (XftFont*) malloc(sizeof(XftFont) * 1);
+	f2->pattern = create<FcPattern>();
+	f2->xfont = create<XftFont>();
 	drw_ptr->fonts = f1;
 	EXPECT_CALL(xlib, XFreePixmap()).Times(testing::Exactly(1));
 	EXPECT_CALL(xlib, XFreeGC()).Times(testing::Exactly(1));
 	drw_free(drw_ptr);
 }
 
+TEST_F(DrwTest, drw_fontset_create) {
+	const char* fonts[] {"font1", "font2", "font3"};
+	size_t fontcount = 3;
+	EXPECT_CALL(xlib, XftFontOpenName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Return(nullptr));
+	auto fnt = drw_fontset_create(&drw, fonts, fontcount);
+	EXPECT_EQ(fnt, nullptr);
+
+	EXPECT_CALL(xlib, XftFontOpenName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Invoke([&](){return create<XftFont>();}));
+	EXPECT_CALL(xlib, FcNameParse()).Times(testing::Exactly(3)).WillRepeatedly(testing::Return(nullptr));
+	fnt = drw_fontset_create(&drw, fonts, fontcount);
+	EXPECT_EQ(fnt, nullptr);
+
+	EXPECT_CALL(xlib, XftFontOpenName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Invoke([&](){return create<XftFont>();}));
+	EXPECT_CALL(xlib, FcNameParse()).Times(testing::Exactly(3)).WillRepeatedly(testing::Invoke([&](){return create<FcPattern>();}));
+	fnt = drw_fontset_create(&drw, fonts, fontcount);
+	ASSERT_NE(fnt, nullptr);
+	EXPECT_EQ(fnt->xfont->ascent, 0);
+	EXPECT_EQ(fnt->xfont->descent, 0);
+	EXPECT_EQ(fnt->h, 0);
+	EXPECT_EQ(fnt->dpy, drw.dpy);
+	drw_fontset_free(drw.fonts);
+}
 }  // namespace

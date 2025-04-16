@@ -39,11 +39,6 @@ FcDefaultSubstitute (FcPattern *pattern) {}
 inline void
 FcCharSetDestroy (FcCharSet *fcs) {}
 
-inline FcPattern *
-FcNameParse (const FcChar8 *name) {
-  return nullptr;
-}
-
 inline bool FcConfigSubstitute (FcConfig   *config,
                     FcPattern  *p,
                     FcMatchKind kind) {
