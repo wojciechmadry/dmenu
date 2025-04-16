@@ -30,6 +30,7 @@ class XlibResults_ {
     virtual XftFont* XftFontOpenPattern() = 0;
     virtual XftFont* XftFontOpenName() = 0;
     virtual FcPattern* FcNameParse() = 0;
+    virtual void XftTextExtentsUtf8() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -41,6 +42,7 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(XftFont*, XftFontOpenPattern, (), (override));
     MOCK_METHOD(XftFont*, XftFontOpenName, (), (override));
     MOCK_METHOD(FcPattern*, FcNameParse, (), (override));
+    MOCK_METHOD(void, XftTextExtentsUtf8, (), (override));
 };
 }
 
@@ -180,7 +182,12 @@ XftTextExtentsUtf8 (Display	    *dpy,
 		    XftFont	    *pub,
 		    const FcChar8 *string,
 		    int		    len,
-		    XGlyphInfo	    *extents){}
+		    XGlyphInfo	    *extents){
+    if(extents) {
+	*extents = XGlyphInfo{};
+    }
+    getXlibMockResults().XftTextExtentsUtf8();
+}
 
 inline void
 XftFontClose (Display *dpy, XftFont *pub) {

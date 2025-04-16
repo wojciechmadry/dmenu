@@ -106,4 +106,22 @@ TEST_F(DrwTest, drw_fontset_create) {
 	EXPECT_EQ(fnt->dpy, drw.dpy);
 	drw_fontset_free(drw.fonts);
 }
+
+TEST_F(DrwTest, drw_font_getexts) {
+	EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(0));
+	unsigned int len = 10;
+	unsigned int w = 1;
+	unsigned int h;
+	drw_font_getexts(nullptr, nullptr, len, &w, &h);
+	EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(1));
+	auto font = create<Fnt>();
+	font->h = 10;
+	auto text = create<char>();
+	drw_font_getexts(font, text, len, &w, &h);
+	EXPECT_EQ(w, 0);
+	EXPECT_EQ(h, font->h);
+	free(font);
+	free(text);
+}
+
 }  // namespace
