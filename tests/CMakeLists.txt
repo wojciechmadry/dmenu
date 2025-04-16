@@ -3,6 +3,29 @@ SET(GCC_COVERAGE_COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 
+
+add_custom_target(COPY_DATA
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/data
+          ${CMAKE_CURRENT_BINARY_DIR}/data
+)
+
+SET(UTF8FILE ${CMAKE_CURRENT_BINARY_DIR}/data/utf8decode.txt)
+add_compile_definitions(UTF8FILE="${UTF8FILE}")
+
+add_custom_target(UNZIP_DATA
+    COMMAND lzma -dkf
+          ${UTF8FILE}.lzma
+    DEPENDS
+    COPY_DATA
+)
+
+add_custom_target(PREPARE_DATA
+  DEPENDS
+  COPY_DATA
+  UNZIP_DATA
+)
+
 add_executable(
   drw_tests
   drw_tests.cpp
@@ -10,6 +33,8 @@ add_executable(
   ../drw.cpp
   ../util.cpp
 )
+
+add_dependencies(drw_tests PREPARE_DATA)
 
 target_link_libraries(
   drw_tests
@@ -25,7 +50,6 @@ target_include_directories(
 
 include(GoogleTest)
 gtest_discover_tests(drw_tests)
-
 
 add_custom_target(LCOV
   lcov

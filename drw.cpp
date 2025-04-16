@@ -10,7 +10,7 @@
 
 #define UTF_INVALID 0xFFFD
 
-static int
+int
 utf8decode(const char *s_in, long *u, int *err)
 {
 	static const unsigned char lens[] = {

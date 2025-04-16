@@ -4,6 +4,11 @@
 #include "mocks/X11/Xlib.h"
 #include "drw.h"
 
+// STD
+#include <string>
+#include <vector>
+#include <fstream>
+
 namespace {
 
 class DrwTest : public testing::Test {
@@ -219,6 +224,60 @@ TEST_F(DrwTest, drw_text) {
 	EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, text, 0), 0);
 	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, nullptr, 0), 0);
 	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, text, 0), 0);
+}
+
+TEST_F(DrwTest, utf8decode) {
+	struct Data {
+		int result;
+		long u;
+		int e;
+	};
+	std::vector<Data> data{};
+	const std::string data_filename = UTF8FILE;
+	std::ifstream f(data_filename);
+	std::string line;
+	std::size_t cnt = 0u;
+	while (std::getline(f, line))
+	{
+		++cnt;
+		std::string num{};
+		std::size_t elem = 0u;
+		for(auto c : line) {
+			if(c == ' ' || c == '\n') {
+				if(cnt == 1) {
+					data.push_back(Data{std::stoi(num)});
+				} else if(cnt == 2) {
+					ASSERT_LT(elem, data.size());
+					data[elem].u = std::stol(num);
+				} else if(cnt == 3) {
+					ASSERT_LT(elem, data.size());
+					data[elem].e = std::stoi(num);
+				}
+				num.clear();
+				++elem;
+			}
+			else {
+				num += c;
+			}
+		}
+	}
+	ASSERT_FALSE(data.empty());
+	long u{};
+	int err{};
+	auto it = data.begin();
+	for(int i = -127 ; i <= 128 ; ++i) {
+		for(int j = -127 ; j <= 128 ; ++j) {
+				std::string s;
+				s.push_back(i);
+				s.push_back(j);
+				const auto res = utf8decode(s.data(), &u, &err);
+				ASSERT_FALSE(it == data.end());
+				EXPECT_EQ(it->result, res);
+				EXPECT_EQ(it->u, u);
+				EXPECT_EQ(it->e, err);
+				++it;
+		}
+	}
 }
 
 }  // namespace
