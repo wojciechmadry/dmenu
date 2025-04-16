@@ -31,6 +31,7 @@ class XlibResults_ {
     virtual XftFont* XftFontOpenName() = 0;
     virtual FcPattern* FcNameParse() = 0;
     virtual void XftTextExtentsUtf8() = 0;
+    virtual bool XftColorAllocName() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -43,6 +44,7 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(XftFont*, XftFontOpenName, (), (override));
     MOCK_METHOD(FcPattern*, FcNameParse, (), (override));
     MOCK_METHOD(void, XftTextExtentsUtf8, (), (override));
+    MOCK_METHOD(bool, XftColorAllocName, (), (override));
 };
 }
 
@@ -217,7 +219,7 @@ XftColorAllocName (Display  *dpy,
 		   Colormap cmap,
 		   const char	    *name,
 		   XftColor *result) {
-  return true;
+  return getXlibMockResults().XftColorAllocName();
 }
 
 inline void

@@ -124,4 +124,17 @@ TEST_F(DrwTest, drw_font_getexts) {
 	free(text);
 }
 
+TEST_F(DrwTest, drw_scm_create) {
+	EXPECT_CALL(xlib, XftColorAllocName()).Times(testing::Exactly(0));
+	const char* clrnames[] = {"a", "b", "c"};
+	EXPECT_EQ(drw_scm_create(&drw, clrnames, 1), nullptr);
+	EXPECT_EQ(drw_scm_create(&drw, nullptr, 2), nullptr);
+	EXPECT_EQ(drw_scm_create(nullptr, clrnames, 1), nullptr);
+
+	EXPECT_CALL(xlib, XftColorAllocName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Return(true));
+	auto clr = drw_scm_create(&drw, clrnames, 3);
+	EXPECT_NE(clr, nullptr);
+	free(clr);
+}
+
 }  // namespace
