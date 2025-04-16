@@ -178,4 +178,47 @@ TEST_F(DrwTest, drw_rect) {
 	drw_rect(&drw, 0, 0, 0, 0, 1, 0);
 }
 
+TEST_F(DrwTest, drw_fontset_getwidth) {
+	const char* text = "text";
+	auto font = create<Fnt>();
+
+	EXPECT_EQ(drw_fontset_getwidth(nullptr, text), 0);
+	EXPECT_EQ(drw_fontset_getwidth(&drw, nullptr), 0);
+
+	drw.fonts = font;
+	ASSERT_NE(drw.scheme, nullptr);
+	ASSERT_NE(drw.fonts, nullptr);
+	ASSERT_NE(drw.dpy, nullptr);
+	EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(4));
+	EXPECT_EQ(drw_fontset_getwidth(&drw, text), 0);
+
+	free(font);
+}
+
+TEST_F(DrwTest, drw_fontset_getwidth_clamp) {
+	const char* text = "text";
+	auto font = create<Fnt>();
+
+	EXPECT_EQ(drw_fontset_getwidth_clamp(nullptr, text, 1), 0);
+	EXPECT_EQ(drw_fontset_getwidth_clamp(&drw, nullptr, 1), 0);
+
+	drw.fonts = font;
+	ASSERT_NE(drw.scheme, nullptr);
+	ASSERT_NE(drw.fonts, nullptr);
+	ASSERT_NE(drw.dpy, nullptr);
+	EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(4));
+	EXPECT_EQ(drw_fontset_getwidth_clamp(&drw, text, 1), 0);
+
+	free(font);
+}
+
+TEST_F(DrwTest, drw_text) {
+	const char* text = "text";
+
+	EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, nullptr, 0), 0);
+	EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, text, 0), 0);
+	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, nullptr, 0), 0);
+	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, text, 0), 0);
+}
+
 }  // namespace
