@@ -88,7 +88,7 @@ drw_free(Drw *drw)
 /* This function is an implementation detail. Library users should use
  * drw_fontset_create instead.
  */
-static Fnt *
+Fnt *
 xfont_create(Drw *drw, const char *fontname, FcPattern *fontpattern)
 {
 	Fnt *font;
@@ -128,7 +128,7 @@ xfont_create(Drw *drw, const char *fontname, FcPattern *fontpattern)
 	return font;
 }
 
-static void
+void
 xfont_free(Fnt *font)
 {
 	if (!font)

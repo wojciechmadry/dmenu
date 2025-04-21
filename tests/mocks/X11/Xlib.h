@@ -39,6 +39,7 @@ class XlibResults_ {
     virtual int XSetForeground() = 0;
     virtual int XFillRectangle() = 0;
     virtual int XDrawRectangle() = 0;
+    virtual FcPattern* XftFontMatch() = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -59,6 +60,7 @@ struct XlibMockResults_ : public XlibResults_ {
     MOCK_METHOD(int, XSetForeground, (), (override));
     MOCK_METHOD(int, XFillRectangle, (), (override));
     MOCK_METHOD(int, XDrawRectangle, (), (override));
+    MOCK_METHOD(FcPattern*, XftFontMatch, (), (override));
 };
 }
 
@@ -262,7 +264,7 @@ inline FcPattern *
 XftFontMatch (Display		*dpy,
 	      int		screen,
 	      const FcPattern *pattern,
-	      FcResult		*result) {return nullptr;}
+	      FcResult		*result) {return getXlibMockResults().XftFontMatch();}
 
 
 #endif

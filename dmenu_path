@@ -4,10 +4,12 @@ cachedir="${XDG_CACHE_HOME:-"$HOME/.cache"}"
 cache="$cachedir/dmenu_run"
 
 [ ! -e "$cachedir" ] && mkdir -p "$cachedir"
+rm $cache
 
 IFS=:
 if stest -dqr -n "$cache" $PATH; then
-	stest -flx $PATH | sort -u | tee "$cache"
+	valgrind stest -flx $PATH | sort -u | tee "$cache"
 else
-	cat "$cache"
+	valgrind stest -flx $PATH | sort -u | tee "$cache"
+	# cat "$cache"
 fi

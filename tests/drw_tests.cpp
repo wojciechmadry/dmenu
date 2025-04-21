@@ -16,14 +16,22 @@ class DrwTest : public testing::Test {
 	DrwTest() : xlib(getXlibMockResults()) {}
 
   void SetUp() override {
-		dpy.screens = new Screen[1];
+		dpy.screens = create<Screen>();
 		dpy.screens[0] = Screen{};
 		drw.dpy = &dpy;
-		drw.scheme = &scheme;
+		scheme = create<Clr>(2);
+		drw.scheme = scheme;
   }
 
   void TearDown() override {
-		delete [] dpy.screens;
+		if(dpy.screens) {
+			free(dpy.screens);
+			dpy.screens = nullptr;
+		}
+		if(scheme) {
+			free(scheme);
+			scheme = nullptr;
+		}
   }
 
 	template<typename T>
@@ -36,7 +44,7 @@ class DrwTest : public testing::Test {
 	Drw drw{};
 	Display dpy{};
 	Window win{};
-	Clr scheme{};
+	Clr* scheme;
 	impl::XlibMockResults_& xlib;
 };
 
@@ -62,6 +70,7 @@ TEST_F(DrwTest, drw_create) {
 }
 
 TEST_F(DrwTest, drw_resize) {
+	EXPECT_NO_THROW(drw_resize(nullptr, 0 ,0));
 	drw.w = 10;
 	drw.h = 10;
 	EXPECT_CALL(xlib, XCreatePixmap()).Times(testing::Exactly(2));
@@ -89,9 +98,11 @@ TEST_F(DrwTest, drw_free) {
 	EXPECT_CALL(xlib, XFreePixmap()).Times(testing::Exactly(1));
 	EXPECT_CALL(xlib, XFreeGC()).Times(testing::Exactly(1));
 	drw_free(drw_ptr);
+	// TODO: Does not verify if drw is nullptr
 }
 
 TEST_F(DrwTest, drw_fontset_create) {
+	EXPECT_NO_THROW(drw_fontset_create(nullptr, nullptr, 0));
 	const char* fonts[] {"font1", "font2", "font3"};
 	size_t fontcount = 3;
 	EXPECT_CALL(xlib, XftFontOpenName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Return(nullptr));
@@ -112,6 +123,10 @@ TEST_F(DrwTest, drw_fontset_create) {
 	EXPECT_EQ(fnt->h, 0);
 	EXPECT_EQ(fnt->dpy, drw.dpy);
 	drw_fontset_free(drw.fonts);
+
+	EXPECT_NO_THROW(drw_fontset_create(&drw, fonts, 0));
+	EXPECT_EQ(drw.fonts, nullptr);
+	// TODO: Does not verify fontcount
 }
 
 TEST_F(DrwTest, drw_font_getexts) {
@@ -142,6 +157,7 @@ TEST_F(DrwTest, drw_scm_create) {
 	auto clr = drw_scm_create(&drw, clrnames, 3);
 	EXPECT_NE(clr, nullptr);
 	free(clr);
+	// TODO: Does not verify clrnames.size() <= clrcount
 }
 
 TEST_F(DrwTest, drw_cur) {
@@ -152,7 +168,11 @@ TEST_F(DrwTest, drw_cur) {
 	EXPECT_TRUE(cur->cursor.set);
 	EXPECT_NE(cur, nullptr);
 	EXPECT_CALL(xlib, XFreeCursor()).Times(testing::Exactly(1));
-	drw_cur_free(&drw, cur);
+	EXPECT_NO_THROW(drw_cur_free(&drw, cur));
+	EXPECT_NO_THROW(drw_cur_free(&drw, nullptr));
+	EXPECT_CALL(xlib, XFreeCursor()).Times(testing::Exactly(0));
+	// TODO: This is derefer nullptr
+	// EXPECT_NO_THROW(drw_cur_free(nullptr, cur));
 }
 
 TEST_F(DrwTest, drw_setfontset) {
@@ -181,6 +201,8 @@ TEST_F(DrwTest, drw_rect) {
 	drw_rect(nullptr, 0, 0, 0, 0, 0, 0);
 	drw_rect(&drw, 0, 0, 0, 0, 0, 0);
 	drw_rect(&drw, 0, 0, 0, 0, 1, 0);
+	// TODO: This not checking size of scheme!
+	// drw_rect(&drw, 0, 0, 0, 0, 1, 1);
 }
 
 TEST_F(DrwTest, drw_fontset_getwidth) {
@@ -218,12 +240,140 @@ TEST_F(DrwTest, drw_fontset_getwidth_clamp) {
 }
 
 TEST_F(DrwTest, drw_text) {
-	const char* text = "text";
+	// TODO: Test dies
+	const char* fonts[] {"font1", "font2", "font3"};
+	size_t fontcount = 3;
+	EXPECT_CALL(xlib, XftFontOpenName()).Times(testing::Exactly(3)).WillRepeatedly(testing::Invoke([&](){return create<XftFont>();}));
+	EXPECT_CALL(xlib, FcNameParse()).Times(testing::Exactly(3)).WillRepeatedly(testing::Invoke([&](){return create<FcPattern>();}));
+	auto fnt = drw_fontset_create(&drw, fonts, fontcount);
+	drw.fonts = fnt;
 
-	EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, nullptr, 0), 0);
-	EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, text, 0), 0);
-	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, nullptr, 0), 0);
-	EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, text, 0), 0);
+	// general
+	{
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(12));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(1));
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(1));
+		EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, nullptr, 0), 0);
+		EXPECT_EQ(drw_text(nullptr, 0, 0, 0, 0, 0, "text", 0), 0);
+		EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, nullptr, 0), 0);
+		EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, "text", 0), 0);
+		EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 0, "text", 0), 2);
+	}
+	// drw_text_with_render
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(1));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(8));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(1));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(0));
+		EXPECT_CALL(xlib, XftFontOpenPattern()).Times(testing::Exactly(0));
+
+
+		EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 0, "text", 0), 2);
+	}
+	// drw_text_with_render_with_lpad
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(1));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(0));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(1));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(0));
+
+		EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 10, "text", 0), 2);
+	}
+
+	// drw_text_with_multiple_utf8_with_render_with_lpad
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(1681));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(0));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(1681));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(0));
+
+		for(int i = -20 ; i <= 20 ; ++i) {
+			for(int j = -20 ; j <= 20 ; ++j) {
+					std::string s;
+					s.push_back(i);
+					s.push_back(j);
+					EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 10, s.data(), 0), 2);
+			}
+		}
+	}
+
+	// drw_text_with_multiple_utf8_with_render_xft_font
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(3701));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(20864));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(3701));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(800)).WillRepeatedly(testing::Return(fnt->pattern));
+		EXPECT_CALL(xlib, XftFontOpenPattern()).Times(testing::Exactly(800)).WillRepeatedly(
+			testing::Invoke([&](){return create<XftFont>();}));
+
+		for(int i = -20 ; i <= 20 ; ++i) {
+			for(int j = -20 ; j <= 20 ; ++j) {
+					std::string s;
+					s.push_back(i);
+					s.push_back(j);
+					EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 0, s.c_str(), 0), 2);
+			}
+		}
+	}
+
+	// drw_text_with_multiple_utf8
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(0));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(3240));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(0));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(800));
+		EXPECT_CALL(xlib, XftFontOpenPattern()).Times(testing::Exactly(0));
+
+		for(int i = -20 ; i <= 20 ; ++i) {
+			for(int j = -20 ; j <= 20 ; ++j) {
+					std::string s;
+					s.push_back(i);
+					s.push_back(j);
+					EXPECT_EQ(drw_text(&drw, 0, 0, 0, 0, 0, s.c_str(), 0), 0);
+			}
+		}
+	}
+
+		// drw_text_with_multiple_utf8_with_render
+	{
+		EXPECT_CALL(xlib, XSetForeground()).Times(testing::Exactly(3301));
+		EXPECT_CALL(xlib, XftTextExtentsUtf8()).Times(testing::Exactly(18064));
+		EXPECT_CALL(xlib, XFillRectangle()).Times(testing::Exactly(3301));
+		EXPECT_CALL(xlib, XftFontMatch()).Times(testing::Exactly(1)).WillRepeatedly(testing::Return(fnt->pattern));
+		EXPECT_CALL(xlib, XftFontOpenPattern()).Times(testing::Exactly(1)).WillRepeatedly(
+			testing::Return(nullptr));
+
+		for(int i = -20 ; i <= 20 ; ++i) {
+			for(int j = -20 ; j <= 20 ; ++j) {
+					std::string s;
+					s.push_back(i);
+					s.push_back(j);
+					EXPECT_EQ(drw_text(&drw, 1, 1, 1, 1, 0, s.c_str(), 0), 2);
+			}
+		}
+	}
+
+	drw_fontset_free(drw.fonts);
+}
+
+TEST_F(DrwTest, xfont_free) {
+	auto font = create<Fnt>();
+	EXPECT_NO_THROW(xfont_free(font));
+	EXPECT_NO_THROW(xfont_free(nullptr));
+}
+
+TEST_F(DrwTest, drw_clr_create) {
+	EXPECT_NO_THROW(drw_clr_create(nullptr, nullptr, nullptr));
+	// TODO: Test die
+}
+
+TEST_F(DrwTest, xfont_create) {
+	auto pattern = create<FcPattern>();
+	EXPECT_CALL(xlib, XftFontOpenPattern()).Times(testing::Exactly(1)).WillRepeatedly(testing::Return(nullptr));
+	EXPECT_EQ(xfont_create(&drw, nullptr, pattern), nullptr);
+	free(pattern);
+	// TODO: Does not verify if drw is nullptr
+	// TODO: Test die
 }
 
 TEST_F(DrwTest, utf8decode) {
