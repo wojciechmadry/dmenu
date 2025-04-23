@@ -1,7 +1,5 @@
 FROM ubuntu:24.04
 
-WORKDIR /ws
-
 RUN apt update \
     && apt install -y \
     g++ \
@@ -16,7 +14,8 @@ RUN apt update \
     libfontconfig-dev \
     libxinerama-dev \
     libxft-dev \
-    lzma
+    lzma \
+    valgrind
 
 ARG UID=1000
 ARG GID=1000
@@ -25,4 +24,4 @@ RUN useradd -m -u $UID -g $GID -o -s /bin/bash dmenu
 
 USER dmenu
 
-WORKDIR /ws
+WORKDIR /dmenu

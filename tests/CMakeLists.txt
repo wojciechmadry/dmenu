@@ -51,22 +51,18 @@ target_include_directories(
 include(GoogleTest)
 gtest_discover_tests(drw_tests)
 
-# add_custom_target(CLEAN_GCDA
-#   find . -iname "*.gcda" | xargs -d"\n" rm
-# )
-#
-# target_add_dependencies(drw_tests CLEAN_GCDA)
-
 add_custom_target(LCOV
   lcov
-  --ignore-errors inconsistent,mismatch,empty
+  --ignore-errors inconsistent,mismatch,empty,unused
   --directory ${PROJECT_SOURCE_DIR}
   --no-external
   --capture
   --output-file code_coverage.info
   -rc branch_coverage=1
-  --exclude="${PROJECT_SOURCE_DIR}/googletest"
-  --exclude="${PROJECT_SOURCE_DIR}/tests"
+  --exclude="${PROJECT_SOURCE_DIR}/googletest/*"
+  --exclude="${PROJECT_SOURCE_DIR}/tests/*"
+  --exclude="${PROJECT_SOURCE_DIR}/build/*"
+  --exclude="${PROJECT_SOURCE_DIR}/.cache/*"
 )
 add_custom_target(coverage
   genhtml code_coverage.info
