@@ -1,0 +1,42 @@
+name: Ubuntu22
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+       - '**'
+
+env:
+  DOCKERFILE: Dockerfile.u22
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: FetchSubmodules
+      run: |
+        git submodule init
+        git submodule update
+
+    - name: g++ Release
+      run: make build DOCKERFILE=$DOCKERFILE
+
+    - name: g++ Unit
+      run: make unit DOCKERFILE=$DOCKERFILE
+
+    - name: g++ Valgrind
+      run: make valgrind DOCKERFILE=$DOCKERFILE
+
+    - name: clang++ Unit
+      run: make unit CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
+
+    - name: clang++ Valgrind
+      run: make valgrind CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
+
+    - name: clang++ Release
+      run: make build CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
+
