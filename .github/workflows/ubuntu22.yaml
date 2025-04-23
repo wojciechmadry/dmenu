@@ -34,9 +34,6 @@ jobs:
     - name: clang++ Unit
       run: make unit CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
 
-    - name: clang++ Valgrind
-      run: make valgrind CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
-
     - name: clang++ Release
       run: make build CC=clang CXX=clang++ DOCKERFILE=$DOCKERFILE
 

@@ -2,7 +2,7 @@ set(CMAKE_BUILD_TYPE Debug)
 SET(GCC_COVERAGE_COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
-add_compile_options(-gdwarf-4 -O0 )
+add_compile_options(-g -O0 )
 
 add_custom_target(COPY_DATA
     COMMAND ${CMAKE_COMMAND} -E copy_directory

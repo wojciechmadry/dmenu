@@ -1,6 +1,5 @@
 /* See LICENSE file for copyright and license details. */
 #include <sys/stat.h>
-#include <bits/struct_stat.h>
 
 #include <dirent.h>
 #include <limits.h>
