@@ -14,10 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Git Submodule Update
+    - name: FetchSubmodules
       run: |
-        git pull --recurse-submodules
-        git submodule update --remote --recursive
+        git submodule init
+        git submodule update
 
     - name: g++ Release
       run: make build
