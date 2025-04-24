@@ -46,7 +46,8 @@ coverage: unit
 valgrind: unit
 	docker run --rm -v "${PWD}:/${WORKDIR}" --name ${IMAGE_NAME} ${IMAGE_NAME} /bin/bash -c \
 	"cd /${WORKDIR}/${BUILD_UNIT} && \
-	valgrind --tool=memcheck --error-exitcode=1 --trace-children=yes ./tests/drw_tests"
+	valgrind --tool=memcheck --error-exitcode=1 --trace-children=yes ./tests/drw_tests &&\"
+	valgrind --tool=memcheck --error-exitcode=1 --trace-children=yes ./tests/dmenu_tests"
 
 .PHONY: build valgrind coverage unit --clean_gcda docker_build
 

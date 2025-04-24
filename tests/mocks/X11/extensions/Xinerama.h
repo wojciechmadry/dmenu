@@ -1,0 +1,4 @@
+#ifndef MOCK_X11_XINERAMA_HPP_
+#define MOCK_X11_XINERAMA_HPP_
+
+#endif

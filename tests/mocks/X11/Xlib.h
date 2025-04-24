@@ -1,9 +1,11 @@
 #ifndef MOCK_XLIB_HPP_
 #define MOCK_XLIB_HPP_
 
+#include <X11/Xlib.h>
 #include <gmock/gmock.h>
 #include "all_mock_class.hpp"
 #include "X.h"
+#include "Xutil.h"
 #include <cstdint>
 
 typedef std::uint64_t Pixmap;
@@ -11,6 +13,9 @@ typedef std::uint64_t Pixmap;
 typedef std::int8_t	    XftChar8;
 typedef std::uint64_t    XftResult;
 typedef XftResult     FcResult;
+typedef int     Bool;
+typedef int     Status;
+typedef int*     XrmDatabase;
 
 #define False 0
 
@@ -83,10 +88,125 @@ typedef struct _XGlyphInfo {
     short yOff;
 } XGlyphInfo;
 
+typedef struct {
+	char *res_name;
+	char *res_class;
+} XClassHint;
+
+typedef struct {
+    int x_org;
+    int y_org;
+    int width;
+    int height;
+} XineramaScreenInfo;
+
+typedef struct {
+    int x,y, width, height, override_redirect;
+    int background_pixel, event_mask;
+} XWindowAttributes;
+
+typedef struct {
+    int x,y, width, height, override_redirect;
+    int background_pixel, event_mask;
+} XSetWindowAttributes;
+
+
+typedef struct {
+    struct {
+	Window window;
+    } xdestroywindow;
+
+    struct {
+	int count;
+    } xexpose;
+
+    struct {
+	Window window;
+    } xfocus;
+
+    struct {
+	int property;
+    } xselection;
+
+    struct {
+	int state;
+    } xvisibility;
+
+    int xkey, type;
+} XEvent;
+
+
+typedef struct {
+} XKeyPressedEvent;
+
+typedef struct {
+    int type;
+    unsigned long serial;
+    Bool send_event;
+    Display *display;
+    Window window;
+    Window root;
+    Window subwindow;
+    int time;
+    int x, y;
+    int x_root, y_root;
+    unsigned int state;
+    unsigned int keycode;
+    Bool same_screen;
+} XKeyEvent;
+
+
+
+inline XIM XOpenIM(Display *display, XrmDatabase db, char *res_name, char *res_class){
+    return {};
+}
+
+inline Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return, unsigned int *mask_return) {
+    return 1;
+}
+
+inline void keypress(int* key) {
+
+}
+
+inline void XFree(void* data) {}
+
+inline XineramaScreenInfo * XineramaQueryScreens (Display *dpy,
+    int *number) {
+    return nullptr;
+}
+
 inline XftFont *
 XftFontOpenPattern (Display *dpy, FcPattern *pattern) {
   return getXlibMockResults().XftFontOpenPattern();
 }
+
+inline int XGrabKeyboard(Display* dpy, Window grab_window, bool owner_events, int pointer_mode, int keyboard_mode, int time)
+{
+    return 0;
+}
+
+inline Window DefaultRootWindow(Display* dpy) {
+    return {};
+}
+
+
+inline int XmbLookupString(XIC ic, XKeyPressedEvent *event, char *buffer_return, int bytes_buffer, KeySym *keysym_return, Status *status_return) { return 0;}
+
+inline void XSetInputFocus(Display* dpy, Window focus, int rever_to, int t)
+{
+
+}
+
+inline void XUngrabKeyboard(Display* dpy, int t)
+{
+
+}
+
+inline void XGetInputFocus(Display* dpy, Window *focus_return, int *revert_to_return)
+{}
+
+inline void XCloseDisplay(Display* dpy){}
 
 inline int XSetForeground(
     Display*		/* display */,

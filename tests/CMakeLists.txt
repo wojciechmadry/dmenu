@@ -48,8 +48,31 @@ target_include_directories(
   mocks
 )
 
+add_executable(
+  dmenu_tests
+  dmenu_tests.cpp
+  mocks/X11/Xlib.cpp
+  ../drw.cpp
+  ../util.cpp
+)
+
+add_dependencies(drw_tests PREPARE_DATA)
+
+target_link_libraries(
+  dmenu_tests
+  GTest::gtest_main
+  GTest::gmock_main
+  gcov
+)
+target_include_directories(
+  dmenu_tests
+  PUBLIC
+  mocks
+)
+
 include(GoogleTest)
 gtest_discover_tests(drw_tests)
+gtest_discover_tests(dmenu_tests)
 
 add_custom_target(LCOV
   lcov
