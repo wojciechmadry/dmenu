@@ -1,0 +1,25 @@
+FROM archlinux:latest
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN pacman -Syu --noconfirm \
+    gcc \
+    clang \
+    cmake \
+    base-devel \
+    libx11 \
+    freetype2 \
+    fontconfig \
+    libxinerama \
+    libxft \
+    xz \
+    valgrind
+
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g $GID -o dmenu
+RUN useradd -m -u $UID -g $GID -o -s /bin/bash dmenu
+
+USER dmenu
+
+WORKDIR /dmenu
