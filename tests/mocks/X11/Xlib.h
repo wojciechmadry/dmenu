@@ -15,6 +15,7 @@ typedef std::uint64_t    XftResult;
 typedef XftResult     FcResult;
 typedef int     Bool;
 typedef int     Status;
+typedef int     Time;
 typedef int*     XrmDatabase;
 
 #define False 0
@@ -191,7 +192,34 @@ inline Window DefaultRootWindow(Display* dpy) {
 }
 
 
-inline int XmbLookupString(XIC ic, XKeyPressedEvent *event, char *buffer_return, int bytes_buffer, KeySym *keysym_return, Status *status_return) { return 0;}
+inline int XmbLookupString(XIC ic, XKeyEvent *event, char *buffer_return, int bytes_buffer, KeySym *keysym_return, Status *status_return) { return 0;}
+
+inline int XConvertSelection(Display *display, Atom selection, Atom target, Atom property, Window requestor, Time time) { return 0;}
+
+inline Status XQueryTree(Display *display, Window w, Window *root_return, Window *parent_return, Window **children_return, unsigned int *nchildren_return) { return {}; }
+inline int XSelectInput(Display *display, Window w, long event_mask) { return 0; }
+
+inline void XReparentWindow(Display* display, Window w, Window parent, int x,  int y) {}
+
+inline XIC XCreateIC(XIM im, ...) { return {}; }
+
+inline void XSetClassHint(Display *display, Window w, XClassHint *class_hints) {}
+
+inline int XMapRaised(Display *display, Window w) { return 0;}
+
+inline Bool XFilterEvent(XEvent *event, Window w) { return {}; }
+
+inline int XRaiseWindow(Display *display, Window w) { return 0; }
+
+inline Window XCreateWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, unsigned int class_, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes) { return {}; }
+
+inline Atom XInternAtom(Display *display, char *atom_name, Bool only_if_exists) { return {}; };
+
+inline int XNextEvent(Display *display, XEvent *event_return) { return 0; }
+
+inline Status XGetWindowAttributes(Display *display, Window w, XWindowAttributes *window_attributes_return) { return {}; }
+
+inline int XGetWindowProperty(Display *display, Window w, Atom property, long long_offset, long long_length, Bool delete_, Atom req_type, Atom *actual_type_return, int *actual_format_return, unsigned long *nitems_return, unsigned long *bytes_after_return, unsigned char **prop_return) { return 0; }
 
 inline void XSetInputFocus(Display* dpy, Window focus, int rever_to, int t)
 {

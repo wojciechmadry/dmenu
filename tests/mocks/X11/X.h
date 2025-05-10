@@ -9,7 +9,7 @@
 #define JoinMiter		0
 #define CurrentTime 123
 #define RevertToParent 1
-#define CopyFromParent 2
+#define CopyFromParent NULL
 #define ControlMask 1
 #define ShiftMask 2
 #define Mod1Mask 4
@@ -88,6 +88,8 @@
 #define XNInputStyle 1
 #define XIMPreeditNothing 2
 #define XIMStatusNothing 4
+#define XNFocusWindow 5
+#define XNClientWindow 5
 
 typedef unsigned long Atom;
 typedef unsigned long XIC;

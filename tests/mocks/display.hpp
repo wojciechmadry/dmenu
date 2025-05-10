@@ -4,11 +4,11 @@
 #include <cstdint>
 using Colormap = std::uint64_t;
 
-class Visual{};
+using Visual = int;
 
 class Screen{
 public:
-	Colormap cmap;
+  Colormap cmap;
   Visual *root_visual;	/* root visual */
   int root_depth;		/* bits per pixel */
 };

@@ -11,10 +11,9 @@
 
 TEST(dmenuTest, macros) {
         XineramaScreenInfo xsi{};
-        xsi.x_xorg = 5;
-        xsi.y_xorg = 4;
+        xsi.x_org = 5;
+        xsi.y_org = 4;
         xsi.width = 3;
         xsi.height = 6;
-        std::cout << INTERSECT(-1, -1, 1, 1, r)
-	EXPECT_TRUE(false);
+        EXPECT_EQ(INTERSECT(-1, -1, 1, 1, xsi), 0);
 }
