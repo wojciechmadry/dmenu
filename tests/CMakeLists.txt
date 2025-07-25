@@ -76,7 +76,7 @@ gtest_discover_tests(dmenu_tests)
 
 add_custom_target(LCOV
   lcov
-  --ignore-errors inconsistent,mismatch,empty,unused
+  --ignore-errors inconsistent,mismatch,empty,unused,version
   --directory ${PROJECT_SOURCE_DIR}
   --no-external
   --capture

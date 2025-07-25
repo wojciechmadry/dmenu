@@ -239,7 +239,6 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
 	/* keep track of a couple codepoints for which we have no match. */
 	static unsigned int nomatches[128], ellipsis_width, invalid_width;
 	static const char invalid[] = "�";
-
 	if (!drw || (render && (!drw->scheme || !w)) || !text || !drw->fonts)
 		return 0;
 
