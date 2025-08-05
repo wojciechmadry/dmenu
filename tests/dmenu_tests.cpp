@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 
 // STD
+#include <fstream>
 #include <iostream>
 
 namespace {
@@ -528,4 +529,470 @@ TEST_F(DrawMenuTest, DrawsWhenNoMatches) {
   EXPECT_CALL(xlib_mock, XSync).Times(1);
 
   drawmenu();
+}
+
+// Test fixture for the grabfocus function
+class GrabFocusTest : public DmenuTest {
+protected:
+  Display dpy_mock;
+
+  void SetUp() override {
+    DmenuTest::SetUp();
+    dpy = &dpy_mock;
+    win = 12345; // A dummy window ID for our target window
+  }
+};
+
+TEST_F(GrabFocusTest, FocusIsAlreadyGrabbed) {
+  EXPECT_CALL(xlib_mock, XGetInputFocus(dpy, testing::_, testing::_))
+      .WillOnce(testing::Invoke([](Display *, Window *focus_return, int *) {
+        *focus_return = win; // Simulate that 'win' already has focus
+      }));
+
+  EXPECT_CALL(xlib_mock,
+              XSetInputFocus(testing::_, testing::_, testing::_, testing::_))
+      .Times(0);
+
+  EXPECT_NO_THROW(grabfocus());
+}
+
+TEST_F(GrabFocusTest, GrabsFocusAfterOneAttempt) {
+  EXPECT_CALL(xlib_mock, XGetInputFocus(dpy, testing::_, testing::_))
+      .WillOnce(testing::Invoke([](Display *, Window *focus_return, int *) {
+        *focus_return = 0; // First, report focus is elsewhere
+      }))
+      .WillOnce(testing::Invoke([](Display *, Window *focus_return, int *) {
+        *focus_return = win; // Then, report success
+      }));
+
+  EXPECT_CALL(xlib_mock, XSetInputFocus(dpy, win, RevertToParent, CurrentTime))
+      .Times(1);
+
+  EXPECT_NO_THROW(grabfocus());
+}
+
+TEST_F(GrabFocusTest, FailsToGrabFocusAndDies) {
+  EXPECT_CALL(xlib_mock, XGetInputFocus(dpy, testing::_, testing::_))
+      .WillRepeatedly(
+          testing::Invoke([](Display *, Window *focus_return, int *) {
+            *focus_return = 0; // Always report focus is not on 'win'
+          }));
+
+  EXPECT_CALL(xlib_mock, XSetInputFocus(dpy, win, RevertToParent, CurrentTime))
+      .Times(100);
+
+  EXPECT_DEATH(grabfocus(), "cannot grab focus");
+}
+
+class GrabKeyboardTest : public DmenuTest {
+protected:
+  Display dpy_mock;
+
+  void SetUp() override {
+    DmenuTest::SetUp();
+    dpy = &dpy_mock;
+    embed = NULL; // Default to not being embedded
+  }
+};
+
+TEST_F(GrabKeyboardTest, ReturnsImmediatelyIfEmbedded) {
+  embed = (char *)"some_window_id"; // Set embed to a non-NULL value
+
+  EXPECT_CALL(xlib_mock, XGrabKeyboard(testing::_, testing::_, testing::_,
+                                       testing::_, testing::_, testing::_))
+      .Times(0);
+
+  grabkeyboard();
+}
+
+TEST_F(GrabKeyboardTest, GrabsKeyboardOnFirstTry) {
+  EXPECT_CALL(xlib_mock, XGrabKeyboard(dpy, testing::_, True, GrabModeAsync,
+                                       GrabModeAsync, CurrentTime))
+      .WillOnce(testing::Return(GrabSuccess));
+
+  EXPECT_NO_THROW(grabkeyboard());
+}
+
+TEST_F(GrabKeyboardTest, GrabsKeyboardAfterMultipleTries) {
+  EXPECT_CALL(xlib_mock, XGrabKeyboard(dpy, testing::_, True, GrabModeAsync,
+                                       GrabModeAsync, CurrentTime))
+      .WillOnce(testing::Return(1))            // Fail
+      .WillOnce(testing::Return(1))            // Fail
+      .WillOnce(testing::Return(GrabSuccess)); // Succeed
+
+  EXPECT_NO_THROW(grabkeyboard());
+}
+
+TEST_F(GrabKeyboardTest, FailsToGrabKeyboardAndDies) {
+  EXPECT_CALL(xlib_mock, XGrabKeyboard(dpy, testing::_, True, GrabModeAsync,
+                                       GrabModeAsync, CurrentTime))
+      .WillRepeatedly(testing::Return(1)); // Always return a failure code
+
+  EXPECT_DEATH(grabkeyboard(), "cannot grab keyboard");
+}
+
+class SortItemsByPopTest : public DmenuTest {
+protected:
+  struct item *test_items;
+  struct item *popular_items;
+
+  void SetUp() override {
+    DmenuTest::SetUp();
+
+    // --- Setup the global state for the tests ---
+
+    // Create a standard list of items to be sorted
+    test_items = (struct item *)ecalloc(5, sizeof(struct item));
+    test_items[0] = {.text = (char *)"apple"};
+    test_items[1] = {.text = (char *)"banana"};
+    test_items[2] = {.text = (char *)"cherry"};
+    test_items[3] = {.text = (char *)"date"};
+    test_items[4] = {.text = NULL}; // End of list
+
+    // Create a list of popular items
+    popular_items = (struct item *)ecalloc(4, sizeof(struct item));
+    popular_items[0] = {.text = (char *)"cherry"}; // Most popular
+    popular_items[1] = {.text = (char *)"apple"};  // Second most
+    popular_items[2] = {.text = (char *)"other"};  // Not in the list
+    popular_items[3] = {.text = NULL};
+
+    // Set the global popitems pointer
+    popitems = popular_items;
+  }
+
+  void TearDown() override {
+    free(test_items);
+    free(popular_items);
+    DmenuTest::TearDown();
+  }
+};
+
+TEST_F(SortItemsByPopTest, SortsBasedOnPopularity) {
+  sortitemsbypop(test_items, NULL);
+
+  EXPECT_STREQ(test_items[0].text, "cherry");
+  EXPECT_STREQ(test_items[1].text, "apple");
+  EXPECT_STREQ(test_items[2].text, "banana");
+  EXPECT_STREQ(test_items[3].text, "date");
+}
+
+TEST_F(SortItemsByPopTest, NoMatches) {
+  popitems[0].text = (char *)"x"; // Change popitems to not match anything
+  popitems[1].text = (char *)"y";
+
+  sortitemsbypop(test_items, NULL);
+
+  EXPECT_STREQ(test_items[0].text, "apple");
+  EXPECT_STREQ(test_items[1].text, "banana");
+  EXPECT_STREQ(test_items[2].text, "cherry");
+  EXPECT_STREQ(test_items[3].text, "date");
+}
+
+TEST_F(SortItemsByPopTest, SortsPartialList) {
+  sortitemsbypop(test_items, &test_items[2]);
+
+  EXPECT_STREQ(test_items[0].text, "cherry");
+  EXPECT_STREQ(test_items[1].text, "apple");
+  EXPECT_STREQ(test_items[2].text, "banana");
+  EXPECT_STREQ(test_items[3].text, "date"); // Unchanged
+}
+
+TEST_F(SortItemsByPopTest, EmptyPopItems) {
+  popitems = NULL;
+
+  sortitemsbypop(test_items, NULL);
+
+  // Order should remain the same
+  EXPECT_STREQ(test_items[0].text, "apple");
+  EXPECT_STREQ(test_items[1].text, "banana");
+  EXPECT_STREQ(test_items[2].text, "cherry");
+}
+
+TEST_F(SortItemsByPopTest, NullInputList) {
+  ASSERT_NO_FATAL_FAILURE(sortitemsbypop(NULL, NULL));
+}
+
+class IncPopTest : public DmenuTest {
+protected:
+  struct item *popular_items;
+  const char *temp_cache_file = "dmenu_pop_test.txt";
+
+  void SetUp() override {
+    DmenuTest::SetUp();
+
+    popular_items = (struct item *)ecalloc(3, sizeof(struct item));
+    popular_items[0] = {.text = (char *)"apple", .out = 10};
+    popular_items[1] = {.text = (char *)"banana", .out = 5};
+    popular_items[2] = {.text = NULL};
+
+    popitems = popular_items;
+    popcache = (char *)temp_cache_file;
+  }
+
+  void TearDown() override {
+    free(popular_items);
+    remove(temp_cache_file); // Clean up the temporary file
+    DmenuTest::TearDown();
+  }
+
+  std::string read_cache_file() {
+    std::ifstream file(temp_cache_file);
+    if (!file.is_open())
+      return "";
+    return std::string((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
+  }
+};
+
+TEST_F(IncPopTest, IncrementsExistingPopularItem) {
+  struct item selected_item = {.text = (char *)"apple"};
+
+  incpop(&selected_item);
+
+  EXPECT_EQ(popitems[0].out, 11);
+
+  std::string file_content = read_cache_file();
+  std::string expected_content = "apple 11\nbanana 5\n";
+  EXPECT_EQ(file_content, expected_content);
+}
+
+TEST_F(IncPopTest, AddsNewPopularItem) {
+  struct item selected_item = {.text = (char *)"cherry"};
+
+  incpop(&selected_item);
+
+  std::string file_content = read_cache_file();
+  std::string expected_content = "apple 10\nbanana 5\ncherry 1\n";
+  EXPECT_EQ(file_content, expected_content);
+}
+
+TEST_F(IncPopTest, HandlesNullSelection) {
+  incpop(NULL);
+
+  std::string file_content = read_cache_file();
+  EXPECT_TRUE(file_content.empty());
+}
+
+TEST_F(IncPopTest, ClampsPopularityAt999) {
+  popitems[0].out = 999;
+  struct item selected_item = {.text = (char *)"apple"};
+
+  incpop(&selected_item);
+
+  EXPECT_EQ(popitems[0].out, 1000);
+
+  std::string file_content = read_cache_file();
+  std::string expected_content = "apple 999\nbanana 5\n";
+  EXPECT_EQ(file_content, expected_content);
+}
+
+TEST_F(IncPopTest, HandlesFileOpenFailure) {
+  popcache = (char *)"/non_existent_dir/test.txt";
+  struct item selected_item = {.text = (char *)"apple"};
+
+  ASSERT_NO_FATAL_FAILURE(incpop(&selected_item));
+}
+
+class MatchTest : public DmenuTest {
+protected:
+  struct item *test_items;
+  struct item *popular_items;
+  Display dpy_mock;
+
+  void SetUp() override {
+    DmenuTest::SetUp();
+
+    // --- Setup the global state for the tests ---
+    fstrncmp = strncmp; // Use case-sensitive matching by default
+    fstrstr = strstr;
+
+    // Create a standard list of items
+    test_items = (struct item *)ecalloc(6, sizeof(struct item));
+    test_items[0] = {.text = (char *)"apple pie"};
+    test_items[1] = {.text = (char *)"apple"};
+    test_items[2] = {.text = (char *)"banana pie"};
+    test_items[3] = {.text = (char *)"apple crumble"};
+    test_items[4] = {.text = (char *)"cherry"};
+    test_items[5] = {.text = NULL};
+    items = test_items;
+
+    // Create a list of popular items
+    popular_items = (struct item *)ecalloc(3, sizeof(struct item));
+    popular_items[0] = {.text = (char *)"apple crumble", .out = 10};
+    popular_items[1] = {.text = (char *)"apple pie", .out = 5};
+    popular_items[2] = {.text = NULL};
+    popitems = popular_items;
+
+    // Mock the underlying functions called by calcoffsets
+    EXPECT_CALL(xlib_mock, XftTextExtentsUtf8)
+        .WillRepeatedly(testing::Return());
+  }
+
+  void TearDown() override {
+    free(test_items);
+    free(popular_items);
+    DmenuTest::TearDown();
+  }
+};
+
+TEST_F(MatchTest, FindsExactMatches) {
+  strcpy(text, "apple");
+
+  match();
+
+  // TODO: This is a bug: Crumble should be first
+  ASSERT_NE(matches, (struct item *)NULL);
+  EXPECT_STREQ(matches->text, "apple pie");
+  EXPECT_STREQ(matches->right->text, "apple crumble");
+  EXPECT_STREQ(matches->right->right->text, "apple");
+}
+
+TEST_F(MatchTest, FindsTokenMatches) {
+  strcpy(text, "pie apple"); // Tokens are "pie" and "apple"
+
+  match();
+
+  ASSERT_NE(matches, (struct item *)NULL);
+  EXPECT_STREQ(matches->text, "apple pie");
+  EXPECT_EQ(matches->right, (struct item *)NULL);
+}
+
+TEST_F(MatchTest, HandlesNoMatches) {
+  strcpy(text, "zucchini");
+
+  match();
+
+  EXPECT_EQ(matches, (struct item *)NULL);
+}
+
+TEST_F(MatchTest, SortsOtherMatchesByPopularity) {
+  strcpy(text, "a");
+
+  match();
+
+  ASSERT_NE(matches, (struct item *)NULL);
+  EXPECT_STREQ(matches->text, "apple crumble");
+  EXPECT_STREQ(matches->right->text, "apple pie");
+  EXPECT_STREQ(matches->right->right->text, "banana pie");
+  EXPECT_STREQ(matches->right->right->right->text, "apple");
+}
+
+class InsertTest : public DmenuTest {
+protected:
+  void SetUp() override {
+    DmenuTest::SetUp();
+
+    // Initialize the global text buffer and cursor for each test
+    strcpy(text, "hello world");
+    cursor = 6; // Position cursor after "hello "
+
+    // Mock the functions called by match() to avoid side effects
+    EXPECT_CALL(xlib_mock, XftTextExtentsUtf8)
+        .WillRepeatedly(testing::Return());
+  }
+};
+
+TEST_F(InsertTest, InsertsTextAtCursor) {
+  const char *new_str = "new ";
+
+  insert(new_str, strlen(new_str));
+
+  // Check the final state of the text and cursor
+  EXPECT_STREQ(text, "hello new world");
+  EXPECT_EQ(cursor, 10); // 6 (original) + 4 (new)
+}
+
+TEST_F(InsertTest, DeletesTextAtCursor) {
+  cursor = 5; // Position cursor at the space
+
+  insert(NULL, -6);
+  EXPECT_STREQ(text, "world");
+  EXPECT_EQ(cursor, static_cast<std::size_t>(0) - 1);
+}
+
+TEST_F(InsertTest, DoesNotInsertIfTooLong) {
+  strcpy(text, "some text");
+  cursor = strlen(text);
+
+  char long_str[sizeof(text)];
+  memset(long_str, 'a', sizeof(long_str));
+  long_str[sizeof(long_str) - 1] = '\0';
+
+  insert(long_str, strlen(long_str));
+
+  EXPECT_STREQ(text, "some text");
+  EXPECT_EQ(cursor, strlen(text));
+}
+
+TEST_F(InsertTest, HandlesZeroLengthInsert) {
+  insert("nothing", 0);
+
+  EXPECT_STREQ(text, "hello world");
+  EXPECT_EQ(cursor, 6);
+}
+
+TEST_F(InsertTest, CallsMatchAfterOperation) {
+  EXPECT_CALL(xlib_mock, XftTextExtentsUtf8).Times(testing::AtLeast(1));
+
+  insert("test", 4);
+}
+
+class NextRuneTest : public DmenuTest {
+protected:
+  void SetUp() override {
+    DmenuTest::SetUp();
+    // Clear the text buffer before each test
+    memset(text, 0, sizeof(text));
+  }
+};
+
+TEST_F(NextRuneTest, MovesForwardOverAscii) {
+  strcpy(text, "test");
+  cursor = 1; // Cursor is at 'e'
+
+  size_t next_pos = nextrune(+1);
+  EXPECT_EQ(next_pos, 2); // Should move to 's'
+}
+
+TEST_F(NextRuneTest, MovesBackwardOverAscii) {
+  strcpy(text, "test");
+  cursor = 2; // Cursor is at 's'
+
+  size_t next_pos = nextrune(-1);
+  EXPECT_EQ(next_pos, 1); // Should move back to 'e'
+}
+
+TEST_F(NextRuneTest, MovesForwardOverMultiByte) {
+  strcpy(text, "aŻb"); // Total length is 1 (a) + 2 (Ż) + 1 (b) = 4 bytes
+  cursor = 0;          // Cursor is at 'a'
+
+  size_t next_pos = nextrune(+1);
+  EXPECT_EQ(next_pos, 1);
+}
+
+TEST_F(NextRuneTest, MovesBackwardOverMultiByte) {
+  strcpy(text, "aŻb");
+  cursor = 3; // Cursor is at 'b'
+
+  size_t next_pos = nextrune(-1);
+  EXPECT_EQ(next_pos, 1); // Position of the start of "Ż"
+}
+
+TEST_F(NextRuneTest, StaysAtBeginning) {
+  strcpy(text, "test");
+  cursor = 0;
+
+  size_t next_pos = nextrune(-1);
+  EXPECT_EQ(next_pos, static_cast<std::size_t>(0) - 1);
+}
+
+TEST_F(NextRuneTest, MovesFromInsideMultiByteChar) {
+  strcpy(text, "aŻb");
+  cursor = 2; // Cursor is on the *second* byte of "Ż"
+
+  size_t next_pos_fwd = nextrune(+1);
+  EXPECT_EQ(next_pos_fwd, 3);
+
+  size_t next_pos_back = nextrune(-1);
+  EXPECT_EQ(next_pos_back, 1);
 }

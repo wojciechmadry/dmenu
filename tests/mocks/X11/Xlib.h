@@ -133,6 +133,12 @@ public:
   virtual int XDrawRectangle() = 0;
   virtual FcPattern *XftFontMatch() = 0;
   virtual void XftDrawStringUtf8() = 0;
+  virtual void XGetInputFocus(Display *dpy, Window *focus_return,
+                              int *revert_to_return) = 0;
+  virtual void XSetInputFocus(Display *dpy, Window focus, int rever_to,
+                              int t) = 0;
+  virtual int XGrabKeyboard(Display *dpy, Window grab_window, bool owner_events,
+                            int pointer_mode, int keyboard_mode, int time) = 0;
 };
 
 struct XlibMockResults_ : public XlibResults_ {
@@ -158,6 +164,15 @@ struct XlibMockResults_ : public XlibResults_ {
   MOCK_METHOD(int, XDrawRectangle, (), (override));
   MOCK_METHOD(FcPattern *, XftFontMatch, (), (override));
   MOCK_METHOD(void, XftDrawStringUtf8, (), (override));
+  MOCK_METHOD(void, XGetInputFocus,
+              (Display * dpy, Window *focus_return, int *revert_to_return),
+              (override));
+  MOCK_METHOD(void, XSetInputFocus,
+              (Display * dpy, Window focus, int rever_to, int t), (override));
+  MOCK_METHOD(int, XGrabKeyboard,
+              (Display * dpy, Window grab_window, bool owner_events,
+               int pointer_mode, int keyboard_mode, int time),
+              (override));
 };
 } // namespace impl
 
@@ -189,7 +204,8 @@ inline XftFont *XftFontOpenPattern(Display *dpy, FcPattern *pattern) {
 
 inline int XGrabKeyboard(Display *dpy, Window grab_window, bool owner_events,
                          int pointer_mode, int keyboard_mode, int time) {
-  return 0;
+  return getXlibMockResults().XGrabKeyboard(dpy, grab_window, owner_events,
+                                            pointer_mode, keyboard_mode, time);
 }
 
 inline Window DefaultRootWindow(Display *dpy) { return {}; }
@@ -260,12 +276,16 @@ inline int XGetWindowProperty(Display *display, Window w, Atom property,
   return 0;
 }
 
-inline void XSetInputFocus(Display *dpy, Window focus, int rever_to, int t) {}
+inline void XSetInputFocus(Display *dpy, Window focus, int rever_to, int t) {
+  getXlibMockResults().XSetInputFocus(dpy, focus, rever_to, t);
+}
 
 inline void XUngrabKeyboard(Display *dpy, int t) {}
 
 inline void XGetInputFocus(Display *dpy, Window *focus_return,
-                           int *revert_to_return) {}
+                           int *revert_to_return) {
+  getXlibMockResults().XGetInputFocus(dpy, focus_return, revert_to_return);
+}
 
 inline void XCloseDisplay(Display *dpy) {}
 
